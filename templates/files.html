@@ -1,0 +1,63 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Files · UVA School of Data Science</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="nav">
+    <div class="brand">
+      <div class="pill">UVA</div>
+      <h1>School of Data Science · <span>Datasets</span></h1>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h2>Files in <span class="mono">{{ container }}</span>{% if prefix %} <span class="small">prefix:</span> <span class="tag mono">{{ prefix }}</span>{% endif %}</h2>
+        <div class="controls">
+          <a class="btn secondary" href="{{ url_for('index') }}">⬅ Upload another</a>
+        </div>
+      </div>
+
+      <div class="table-wrap row">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Size (bytes)</th>
+              <th>Last Modified (UTC)</th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in blobs %}
+              <tr>
+                <td class="mono">{{ b.name }}</td>
+                <td>{{ b.size }}</td>
+                <td>{{ b.last_modified }}</td>
+                <td><a class="btn" href="{{ url_for('sas_for_blob', blob_name=b.name) }}">Get 30‑min SAS</a></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4">No files yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="footer">Tip: use the <span class="mono">/sas/&lt;blob_name&gt;</span> link to generate a read‑only share URL.</p>
+    </section>
+  </main>
+</body>
+</html>

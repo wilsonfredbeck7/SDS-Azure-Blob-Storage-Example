@@ -1,0 +1,41 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Upload Dataset · UVA School of Data Science</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="nav">
+    <div class="brand">
+      <div class="pill">UVA</div>
+      <h1>School of Data Science · <span>Azure Blob Uploader</span></h1>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <section class="card">
+      <h2>Upload a dataset to <span class="mono">{{ container }}</span></h2>
+      <p class="small">Files are stored in Azure Blob Storage. Filenames are timestamped and sanitized. Max size: {{ (config.MAX_CONTENT_LENGTH // (1024*1024)) if config.MAX_CONTENT_LENGTH else 0 }} MB.</p>
+      <form class="row" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        <div class="controls">
+          <input type="file" name="file" required aria-label="Choose dataset file">
+          <button class="btn orange" type="submit">Upload</button>
+          <a class="btn secondary" href="{{ url_for('files') }}">View files</a>
+        </div>
+      </form>
+      <p class="footer">Container: <span class="tag mono">{{ container }}</span></p>
+    </section>
+  </main>
+</body>
+</html>
