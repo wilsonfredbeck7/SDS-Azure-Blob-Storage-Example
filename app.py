@@ -13,21 +13,60 @@ container_name = "uploads"
 def index():
     return render_template('index.html')
 
-@app.route('/upload', methods=['GET', 'POST'])
+from flask import jsonify
+
+@app.route('/api/v1/health', methods=['GET'])
+def api_health():
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/api/v1/upload', methods=['POST'])
+def api_upload():
+    try:
+        file = request.files.get('file')
+        if not file:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        # Check if Azure connection is available
+        if not connect_str:
+            return jsonify({"success": False, "error": "Azure storage not configured"}), 500
+
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
+        blob_client.upload_blob(file, overwrite=True)
+
+        return jsonify({"filename": file.filename, "success": True}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/upload', methods=['POST'])
 def upload():
-    if request.method == 'POST':
-        file = request.files['file']
-        if file:
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
-            blob_client.upload_blob(file, overwrite=True)
-            return redirect(url_for('files'))
-    return render_template('upload.html')
+    try:
+        file = request.files.get('file')
+        if not file:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        # Check if Azure connection is available
+        if not connect_str:
+            return jsonify({"success": False, "error": "Azure storage not configured"}), 500
+
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
+        blob_client.upload_blob(file, overwrite=True)
+
+        return jsonify({"filename": file.filename, "success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 @app.route('/files')
 def files():
-    container_client = blob_service_client.get_container_client(container_name)
-    blob_list = container_client.list_blobs()
-    return render_template('files.html', blobs=blob_list, container=container_name)
+    try:
+        if not connect_str:
+            return jsonify({"error": "Azure storage not configured"}), 500
+            
+        container_client = blob_service_client.get_container_client(container_name)
+        blob_list = container_client.list_blobs()
+        return render_template('files.html', blobs=blob_list, container=container_name)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/sas/<blob_name>')
 def sas_for_blob(blob_name):
