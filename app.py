@@ -33,7 +33,7 @@ def api_upload():
         blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
         blob_client.upload_blob(file, overwrite=True)
 
-        return jsonify({"filename": file.filename, "success": True}), 200
+        return jsonify({"status": "success"}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
