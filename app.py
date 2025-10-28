@@ -20,26 +20,25 @@ def upload():
         if file:
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
             blob_client.upload_blob(file, overwrite=True)
-
+            
             if request.headers.get('Accept') == 'application/json':
-                return jsonify({"ok": True, "filename": file.filename})
-            else:
-                flash(f"File '{file.filename}' uploaded successfully!", "success")
-                return redirect(url_for('files'))
-
+                return jsonify({"success": True, "filename": file.filename})
+            
+            return redirect(url_for('files'))
+        
         if request.headers.get('Accept') == 'application/json':
-            return jsonify({"ok": False, "error": "No file provided"}), 400
+            return jsonify({"success": False, "error": "No file provided"}), 400
         else:
-            flash("No file provided", "error")
-            return redirect(url_for('index'))
-
+            return redirect(url_for('upload'))
+    
     return render_template('upload.html')
 
 @app.route('/files')
 def files():
     container_client = blob_service_client.get_container_client(container_name)
-    blob_list = container_client.list_blobs()
-    return render_template('files.html', blobs=blob_list)
+    blob_list = list(container_client.list_blobs())
+    return render_template('files.html', blobs=blob_list, container=container_name)
+
 
 @app.route('/api/v1/health')
 def health():
