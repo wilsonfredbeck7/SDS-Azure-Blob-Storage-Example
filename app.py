@@ -1,44 +1,39 @@
-from flask import Flask, request, render_template, redirect, url_for, flash
+from flask import Flask, request, render_template, redirect, url_for, jsonify, flash
 from azure.storage.blob import BlobServiceClient
 import os
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Needed for flashing messages
+app.secret_key = "supersecret"
 
-# Azure Storage connection
 connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 container_name = "uploads"
 
-# Ensure container exists
-try:
-    blob_service_client.create_container(container_name)
-except Exception:
-    pass  # container likely already exists
-
 @app.route('/')
 def index():
-    return render_template('index.html', container=container_name, config=app.config)
+    return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload():
-    if 'file' not in request.files:
-        flash("No file part", "error")
-        return redirect(url_for('index'))
+    if request.method == 'POST':
+        file = request.files.get('file')
+        if file:
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
+            blob_client.upload_blob(file, overwrite=True)
 
-    file = request.files['file']
-    if file.filename == '':
-        flash("No selected file", "error")
-        return redirect(url_for('index'))
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({"ok": True, "filename": file.filename})
+            else:
+                flash(f"File '{file.filename}' uploaded successfully!", "success")
+                return redirect(url_for('files'))
 
-    try:
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file.filename)
-        blob_client.upload_blob(file, overwrite=True)
-        flash(f"File '{file.filename}' uploaded successfully!", "success")
-    except Exception as e:
-        flash(f"Upload failed: {str(e)}", "error")
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({"ok": False, "error": "No file provided"}), 400
+        else:
+            flash("No file provided", "error")
+            return redirect(url_for('index'))
 
-    return redirect(url_for('index'))
+    return render_template('upload.html')
 
 @app.route('/files')
 def files():
